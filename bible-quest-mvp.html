@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bible Quest — clickable MVP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#8FD3FF; --sky2:#E3F4FF; --meadow:#B9EBA8;
+  --ink:#1D2B53; --ink-soft:#52628F;
+  --paper:#FFFFFF; --paper2:#F2F7FC; --line:#D3E1EF;
+  --sun:#FFC83D; --sun-deep:#D99A00;
+  --grass:#34B862; --grass-deep:#22894A;
+  --coral:#FF6B5B; --coral-deep:#D2483A;
+  --plum:#7B5CD6; --plum-deep:#5A3DB5;
+  --page:#5DB6EC; --frame:#1D2B53;
+  --coin-ink:#3A2A00;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sky:#22346B; --sky2:#18244A; --meadow:#1F4A3A;
+    --ink:#F1F5FF; --ink-soft:#B4C1E6;
+    --paper:#22305E; --paper2:#1B2850; --line:#36487F;
+    --page:#0F1834; --frame:#3A4C86;
+  }
+}
+:root[data-theme="dark"]{
+  --sky:#22346B; --sky2:#18244A; --meadow:#1F4A3A;
+  --ink:#F1F5FF; --ink-soft:#B4C1E6;
+  --paper:#22305E; --paper2:#1B2850; --line:#36487F;
+  --page:#0F1834; --frame:#3A4C86;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--page);color:var(--ink);
+  font-family:'Nunito',ui-rounded,'Segoe UI',system-ui,-apple-system,sans-serif;font-weight:700;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+h1,h2,h3,.display{font-family:'Baloo 2','Nunito',ui-rounded,system-ui,sans-serif;margin:0;line-height:1.1}
+:focus-visible{outline:3px solid var(--plum);outline-offset:3px;border-radius:10px}
+#app{height:100%;display:flex;justify-content:center}
+.phone{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column;
+  background:var(--sky2);position:relative;overflow:hidden}
+@media (min-width:640px) and (min-height:720px){
+  body{padding:24px 0}
+  .phone{height:min(900px,100%);border-radius:40px;box-shadow:0 0 0 10px var(--frame),0 30px 60px rgba(10,20,60,.35)}
+}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.pad{padding:20px}
+
+/* buttons */
+.btn{appearance:none;border:0;cursor:pointer;font-family:'Baloo 2','Nunito',system-ui,sans-serif;font-weight:800;
+  font-size:19px;line-height:1;padding:15px 22px 13px;border-radius:18px;
+  background:var(--b,var(--grass));color:#fff;box-shadow:0 5px 0 var(--bd,var(--grass-deep));
+  transition:transform .08s,box-shadow .08s;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--bd,var(--grass-deep))}
+.btn.wide{width:100%}
+.btn.sun{--b:var(--sun);--bd:var(--sun-deep);color:var(--coin-ink)}
+.btn.plum{--b:var(--plum);--bd:var(--plum-deep)}
+.btn.coral{--b:var(--coral);--bd:var(--coral-deep)}
+.btn.ghost{--b:var(--paper);--bd:var(--line);color:var(--ink)}
+.btn.small{font-size:16px;padding:10px 14px 9px;border-radius:14px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:disabled:active{transform:none;box-shadow:0 5px 0 var(--bd,var(--grass-deep))}
+.linkbtn{background:none;border:0;color:var(--ink-soft);text-decoration:underline;cursor:pointer;padding:8px}
+
+/* onboarding */
+.welcome{flex:1;display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 62%,var(--meadow) 100%);padding:28px 22px 26px;text-align:center}
+.rainbow{width:260px;height:130px;margin:30px auto 0;
+  background:radial-gradient(circle 130px at 50% 100%,transparent 44%,#7B5CD6 44% 51%,#3E8EDE 51% 58%,#34B862 58% 65%,#FFC83D 65% 72%,#FF9F43 72% 79%,#FF6B5B 79% 86%,transparent 86%)}
+.title-big{font-size:58px;font-weight:800;letter-spacing:-.5px;margin-top:-34px;color:var(--ink);
+  text-shadow:0 4px 0 var(--paper)}
+.tagline{font-size:18px;color:var(--ink-soft);margin:10px auto 0;max-width:30ch;line-height:1.45}
+.hills{font-size:44px;letter-spacing:6px;margin:18px 0 6px}
+.note{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:14px auto 0;max-width:36ch;font-weight:600}
+.onb{flex:1;display:flex;flex-direction:column}
+.onb-head{padding:18px 20px 6px;display:flex;align-items:center;gap:12px}
+.stepdots{display:flex;gap:6px;margin-left:auto}
+.stepdots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.stepdots i.on{background:var(--plum)}
+.onb h1{font-size:30px;margin:4px 0 6px}
+.onb p.lead{color:var(--ink-soft);margin:0 0 20px;line-height:1.5;font-weight:600}
+.field{display:block;margin-bottom:16px}
+.field span{display:block;font-size:15px;margin-bottom:6px}
+.field small{display:block;color:var(--ink-soft);font-weight:600;margin-top:6px;line-height:1.4}
+.input{width:100%;font:inherit;font-size:18px;padding:14px 16px;border-radius:14px;border:3px solid var(--line);
+  background:var(--paper);color:var(--ink)}
+.input:focus{border-color:var(--plum);outline:none}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:600;line-height:1.4;font-size:15px}
+.check input{width:22px;height:22px;accent-color:var(--plum);margin-top:1px;flex:none}
+.err{color:var(--coral-deep);font-size:15px;margin:4px 0 12px}
+:root[data-theme="dark"] .err{color:var(--coral)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .err{color:var(--coral)}}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{border:3px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 18px;cursor:pointer;font-size:17px}
+.chip.on{border-color:var(--plum);background:var(--plum);color:#fff}
+.onb-foot{padding:16px 20px 20px;margin-top:auto}
+.starters{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.starter{border:4px solid var(--line);background:var(--paper);border-radius:24px;padding:20px 10px 16px;cursor:pointer;text-align:center}
+.starter.on{border-color:var(--grass);box-shadow:0 0 0 4px rgba(52,184,98,.25)}
+.starter .e{font-size:64px;display:block;line-height:1.1}
+.starter b{font-family:'Baloo 2',sans-serif;font-size:21px}
+
+/* HUD + tabs */
+.hud{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--paper);border-bottom:3px solid var(--line)}
+.avatar-btn{border:0;background:none;padding:0;cursor:pointer}
+.av{position:relative;display:inline-grid;place-items:center;border-radius:50%;background:var(--sky);border:3px solid var(--paper);box-shadow:0 0 0 3px var(--line)}
+.av-sm{width:46px;height:46px;font-size:26px}
+.av-lg{width:96px;height:96px;font-size:56px}
+.av-a{position:absolute;right:-6px;bottom:-4px;font-size:.55em;background:var(--paper);border-radius:50%;width:1.5em;height:1.5em;display:grid;place-items:center;box-shadow:0 0 0 2px var(--line)}
+.who{line-height:1.15;min-width:0}
+.who .nm{font-family:'Baloo 2',sans-serif;font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9ch}
+.who .lv{font-size:13px;color:var(--ink-soft)}
+.coins{margin-left:auto;background:var(--sun);color:var(--coin-ink);font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;
+  border-radius:999px;padding:4px 14px 2px 6px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 0 var(--sun-deep)}
+.coin{font-size:18px}
+.grown{border:2px solid var(--line);background:var(--paper2);border-radius:12px;font-size:12px;padding:7px 9px;cursor:pointer;color:var(--ink-soft)}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--paper);border-top:3px solid var(--line)}
+.tab{border:0;background:none;padding:8px 0 10px;font-size:12px;color:var(--ink-soft);cursor:pointer}
+.tab .ic{display:block;font-size:24px;line-height:1.2;filter:grayscale(.6);opacity:.75}
+.tab.on{color:var(--ink)}
+.tab.on .ic{filter:none;opacity:1;transform:translateY(-2px)}
+
+/* journey map */
+.greet{padding:18px 20px 0}
+.greet h1{font-size:28px}
+.greet p{margin:4px 0 0;color:var(--ink-soft);font-weight:600}
+.map{position:relative;background:linear-gradient(180deg,var(--sky2) 0%,var(--sky) 45%,var(--meadow) 100%);margin-top:10px}
+.map svg{position:absolute;inset:0;width:100%}
+.map path{fill:none;stroke:var(--paper);stroke-width:8;stroke-linecap:round;stroke-dasharray:2 16}
+.world{position:absolute;transform:translateX(-50%);width:150px;border:0;background:none;cursor:pointer;text-align:center;padding:0}
+.orb{width:96px;height:96px;border-radius:50%;margin:0 auto;display:grid;place-items:center;font-size:46px;
+  background:var(--wc);border:6px solid var(--paper);box-shadow:0 7px 0 rgba(20,30,70,.22)}
+.world .wt{display:block;font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-top:8px;line-height:1.05}
+.world .wp{display:inline-block;font-size:13px;margin-top:4px;background:var(--paper);border-radius:999px;padding:2px 10px;color:var(--ink-soft)}
+.world.current .orb{animation:bob 2.4s ease-in-out infinite}
+.world.locked .orb,.world.soon .orb{background:var(--line);filter:grayscale(1);box-shadow:0 7px 0 rgba(20,30,70,.12)}
+.world.soon{cursor:default}
+.world.soon .wt,.world.locked .wt{color:var(--ink-soft)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* world screen */
+.whead{padding:16px 20px 22px;background:var(--wc);color:#fff;position:relative}
+.whead .back{border:0;background:rgba(255,255,255,.25);color:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-size:15px}
+.whead .row{display:flex;align-items:center;gap:14px;margin-top:14px}
+.whead .big{font-size:54px}
+.whead h1{font-size:32px}
+.whead p{margin:2px 0 0;opacity:.92;font-weight:700}
+.bar{height:12px;background:rgba(255,255,255,.35);border-radius:99px;margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;background:#fff;border-radius:99px}
+.lvls{padding:18px 16px 30px;display:flex;flex-direction:column;gap:12px}
+.lvl{display:flex;align-items:center;gap:14px;border:0;background:var(--paper);border-radius:20px;padding:12px 14px;cursor:pointer;
+  text-align:left;box-shadow:0 4px 0 var(--line)}
+.lvl .num{width:46px;height:46px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:800;
+  background:var(--wc);color:#fff}
+.lvl .lt{flex:1;min-width:0}
+.lvl .lt b{display:block;font-family:'Baloo 2',sans-serif;font-size:19px;line-height:1.1}
+.lvl .lt small{color:var(--ink-soft);font-size:13px}
+.lvl .st{font-size:16px;letter-spacing:1px;color:var(--sun-deep);white-space:nowrap}
+.lvl.next{box-shadow:0 0 0 3px var(--wc),0 4px 0 var(--line)}
+.lvl.locked{opacity:.55;cursor:default}
+.lvl.locked .num{background:var(--line);color:var(--ink-soft)}
+.lvl.challenge .num{background:var(--sun);color:var(--coin-ink)}
+
+/* run */
+.runbar{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--paper);border-bottom:3px solid var(--line)}
+.runbar .x{border:0;background:var(--paper2);width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer;color:var(--ink-soft)}
+.steps{flex:1;display:flex;gap:6px}
+.steps i{flex:1;height:12px;border-radius:99px;background:var(--line)}
+.steps i.on{background:var(--grass)}
+.runcoins{font-family:'Baloo 2',sans-serif;font-size:17px;color:var(--ink-soft);min-width:64px;text-align:right}
+.run-foot{padding:14px 16px 16px;background:var(--paper);border-top:3px solid var(--line);display:flex;gap:10px}
+.run-foot .btn{flex:1}
+.art{border-radius:28px;background:var(--wc);height:210px;display:grid;place-items:center;font-size:76px;letter-spacing:8px;
+  box-shadow:inset 0 -14px 0 rgba(0,0,0,.08)}
+.stext{font-size:21px;line-height:1.5;margin:22px 4px 10px;font-weight:700}
+.dots{display:flex;gap:7px;justify-content:center;margin:12px 0}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--ink)}
+.ref{text-align:center;color:var(--ink-soft);font-size:14px;margin:6px 0 0}
+.kicker{color:var(--ink-soft);font-size:15px;margin:0 0 8px}
+.q{font-size:27px;margin-bottom:20px}
+.opts{display:flex;flex-direction:column;gap:12px}
+.opt{border:3px solid var(--line);background:var(--paper);border-radius:18px;padding:15px 16px;font-size:19px;text-align:left;cursor:pointer;
+  box-shadow:0 4px 0 var(--line);display:flex;gap:12px;align-items:center}
+.opt .k{width:30px;height:30px;flex:none;border-radius:9px;background:var(--paper2);display:grid;place-items:center;font-family:'Baloo 2',sans-serif;font-size:16px}
+.opt.right{background:var(--grass);border-color:var(--grass-deep);color:#fff;box-shadow:0 4px 0 var(--grass-deep)}
+.opt.wrong{background:var(--coral);border-color:var(--coral-deep);color:#fff;box-shadow:0 4px 0 var(--coral-deep)}
+.opt.right .k,.opt.wrong .k{background:rgba(255,255,255,.25)}
+.opt.dim{opacity:.5}
+.opt:disabled{cursor:default}
+.feedback{margin-top:18px;border-radius:18px;padding:14px 16px;line-height:1.5;font-weight:700;background:var(--paper);border-left:7px solid var(--fb)}
+.feedback b{font-family:'Baloo 2',sans-serif;font-size:20px;display:block;margin-bottom:2px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.card{aspect-ratio:3/4;border:0;border-radius:16px;cursor:pointer;font-size:38px;display:grid;place-items:center;
+  background:var(--wc);color:#fff;box-shadow:0 5px 0 rgba(20,30,70,.2);transition:transform .2s}
+.card .back{font-size:28px;opacity:.85}
+.card.up{background:var(--paper);color:var(--ink);transform:rotateY(180deg)}
+.card.up span{transform:rotateY(180deg)}
+.card.done{background:var(--grass);color:#fff;transform:none;box-shadow:0 5px 0 var(--grass-deep)}
+.card.done span{transform:none}
+.verse{background:var(--paper);border-radius:22px;padding:22px 20px;font-size:22px;line-height:1.75;box-shadow:0 5px 0 var(--line);
+  font-family:'Baloo 2',sans-serif;font-weight:700}
+.verse .vref{display:block;font-family:'Nunito',sans-serif;font-size:14px;color:var(--ink-soft);margin-top:8px;line-height:1.4}
+.blank{display:inline-block;min-width:96px;border-bottom:4px dashed var(--plum);text-align:center;color:var(--plum)}
+.slot{display:inline-block;min-width:54px;height:1.3em;vertical-align:-.2em;border-bottom:4px dashed var(--line);margin:0 2px}
+.placed{display:inline-block;background:var(--plum);color:#fff;border-radius:10px;padding:0 8px;margin:2px 2px;line-height:1.5}
+.bank{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;justify-content:center}
+.tile{border:3px solid var(--line);background:var(--paper);border-radius:14px;padding:10px 14px;font-family:'Baloo 2',sans-serif;font-size:20px;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+.tile.used{visibility:hidden}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.result{text-align:center;padding-top:26px}
+.stars{font-size:62px;letter-spacing:6px;color:var(--line)}
+.stars .on{color:var(--sun);display:inline-block;animation:pop .5s backwards}
+.stars .on:nth-child(2){animation-delay:.18s}.stars .on:nth-child(3){animation-delay:.36s}
+@keyframes pop{0%{transform:scale(0) rotate(-40deg)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.result h1{font-size:36px;margin:8px 0 4px}
+.result p.sub{color:var(--ink-soft);margin:0 0 20px;font-weight:600}
+.ledger{background:var(--paper);border-radius:20px;padding:6px 18px;text-align:left;box-shadow:0 4px 0 var(--line)}
+.ledger div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:2px dashed var(--line);font-size:17px}
+.ledger div:last-child{border:0;font-family:'Baloo 2',sans-serif;font-size:22px}
+.unlock{margin-top:16px;background:var(--plum);color:#fff;border-radius:18px;padding:14px;font-size:17px}
+.confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;animation:fall 2.2s ease-in forwards}
+@keyframes fall{to{transform:translateY(960px) rotate(720deg);opacity:.9}}
+
+/* generic panels */
+.panel{background:var(--paper);border-radius:22px;padding:18px;box-shadow:0 4px 0 var(--line);margin-bottom:16px}
+.panel h2{font-size:22px;margin-bottom:10px}
+.sec-title{font-size:26px;margin:4px 0 4px}
+.sec-sub{color:var(--ink-soft);margin:0 0 18px;font-weight:600;line-height:1.45}
+.daily-sun{font-size:70px;text-align:center;line-height:1}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.item{background:var(--paper);border-radius:20px;padding:14px 12px;text-align:center;box-shadow:0 4px 0 var(--line);display:flex;flex-direction:column;align-items:center;gap:6px}
+.item .e{font-size:48px;line-height:1.1}
+.item b{font-family:'Baloo 2',sans-serif;font-size:18px}
+.item .price{font-size:14px;color:var(--ink-soft)}
+.item.wearing{box-shadow:0 0 0 3px var(--grass),0 4px 0 var(--line)}
+.earned-tag{font-size:12px;background:var(--paper2);color:var(--ink-soft);border-radius:99px;padding:4px 10px;display:inline-block}
+.me-card{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.badge{display:flex;gap:14px;align-items:center;background:var(--paper);border-radius:20px;padding:14px;box-shadow:0 4px 0 var(--line);margin-bottom:12px}
+.badge .e{font-size:40px;width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:var(--sun);flex:none}
+.badge.locked .e{background:var(--line);filter:grayscale(1);opacity:.7}
+.badge b{font-family:'Baloo 2',sans-serif;font-size:19px;display:block}
+.badge small{color:var(--ink-soft);font-size:14px}
+.minibar{height:8px;background:var(--paper2);border-radius:99px;margin-top:6px;overflow:hidden}
+.minibar i{display:block;height:100%;background:var(--grass)}
+.board{background:var(--paper);border-radius:22px;padding:6px;box-shadow:0 4px 0 var(--line)}
+.brow{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px}
+.brow .pos{width:34px;font-family:'Baloo 2',sans-serif;font-size:22px;text-align:center}
+.brow .bn{flex:1;font-size:17px}
+.brow .bs{font-family:'Baloo 2',sans-serif;font-size:19px}
+.brow.me{background:var(--sun);color:var(--coin-ink)}
+.segment{display:flex;background:var(--paper);border-radius:14px;padding:4px;gap:4px;margin-bottom:14px;box-shadow:0 3px 0 var(--line)}
+.segment button{flex:1;border:0;border-radius:10px;padding:10px;background:none;cursor:pointer;color:var(--ink-soft)}
+.segment button.on{background:var(--plum);color:#fff}
+.empty{text-align:center;padding:30px 20px;color:var(--ink-soft);font-weight:600;line-height:1.5}
+.empty .e{font-size:54px;display:block;margin-bottom:8px}
+
+/* parent */
+.phead{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--ink);color:var(--paper)}
+:root[data-theme="dark"] .phead{background:var(--paper);color:var(--ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .phead{background:var(--paper);color:var(--ink)}}
+.phead h1{font-size:22px;flex:1}
+.phead button{border:0;background:rgba(127,140,180,.25);color:inherit;border-radius:12px;padding:8px 12px;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--paper2);border-radius:16px;padding:12px 8px;text-align:center}
+.stat b{display:block;font-family:'Baloo 2',sans-serif;font-size:26px;line-height:1.1}
+.stat small{font-size:12px;color:var(--ink-soft)}
+.prog{height:14px;background:var(--paper2);border-radius:99px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--grass)}
+.setrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2px solid var(--paper2)}
+.setrow:last-child{border:0}
+.setrow div{flex:1;line-height:1.35}
+.setrow small{display:block;color:var(--ink-soft);font-weight:600}
+.switch{width:54px;height:32px;border-radius:99px;border:0;background:var(--line);position:relative;cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.switch[aria-checked="true"]{background:var(--grass)}
+.switch[aria-checked="true"]::after{left:26px}
+.vlist{margin:0;padding:0;list-style:none}
+.vlist li{padding:8px 0;border-bottom:2px solid var(--paper2);font-weight:600}
+.vlist li:last-child{border:0}
+.tools{display:flex;flex-wrap:wrap;gap:10px}
+
+/* toast + floats */
+.toast{position:absolute;left:50%;top:14px;transform:translate(-50%,-140%);background:var(--ink);color:var(--paper);
+  border-radius:18px;padding:12px 18px;font-size:16px;z-index:20;max-width:90%;text-align:center;transition:transform .3s;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.toast.show{transform:translate(-50%,0)}
+.float{position:absolute;left:50%;top:40%;transform:translateX(-50%);font-family:'Baloo 2',sans-serif;font-size:34px;font-weight:800;
+  color:var(--sun-deep);z-index:10;pointer-events:none;animation:floatup .9s ease-out forwards;text-shadow:0 2px 0 var(--paper)}
+@keyframes floatup{to{transform:translate(-50%,-80px);opacity:0}}
+.gate{flex:1;display:flex;flex-direction:column;justify-content:center;padding:30px 24px;text-align:center}
+.gate h1{font-size:30px;margin-bottom:8px}
+.gate .sum{font-family:'Baloo 2',sans-serif;font-size:44px;margin:16px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><div class="phone" id="phone"></div></div>
+<script>
+/* ---------------- Content ---------------- */
+const WORLDS = [
+ { id:'creation', title:'Creation', emoji:'🌍', color:'#34B862', ref:'Genesis 1–2', levels:[
+  { id:'c1', title:'In the Beginning', ref:'Genesis 1:1–5', story:[
+    {art:'🌑', text:'In the very beginning, there was no sky, no land and no people. Only God.'},
+    {art:'✨💡✨', text:'God spoke: “Let there be light.” And light appeared!'},
+    {art:'🌅🌙', text:'God called the light “day” and the darkness “night”. That was the first day.'}],
+    game:{type:'quiz', questions:[
+      {q:'What did God create on Day 1?', o:['Light','Animals','Trees','People'], a:0, x:'On Day 1 God said “Let there be light,” and there was light (Genesis 1:3).'}]}},
+  { id:'c2', title:'Sky and Sea', ref:'Genesis 1:6–8', story:[
+    {art:'🌊🌊🌊', text:'On the second day, there was water everywhere.'},
+    {art:'☁️🌤️', text:'God made a space to divide the waters above from the waters below.'},
+    {art:'🕊️☁️', text:'God called that space “sky”. That was the second day.'}],
+    game:{type:'verse', ref:'Genesis 1:1 (KJV)', text:'In the beginning God created the heaven and the earth.', blank:2, options:['beginning','garden','morning','end'], build:[3,10]}},
+  { id:'c3', title:'Land and Plants', ref:'Genesis 1:9–13', story:[
+    {art:'🌊⛰️', text:'On the third day, God gathered the waters together, and dry land appeared.'},
+    {art:'🏝️', text:'God called the dry land “earth” and the waters “seas”.'},
+    {art:'🌱🌸🌳', text:'Then God made plants grow: grass, flowers and trees full of fruit!'}],
+    game:{type:'match', title:'Match the things God made on Day 3', pairs:['🌊','⛰️','🌳','🌸']}},
+  { id:'c4', title:'Sun, Moon and Stars', ref:'Genesis 1:14–19', story:[
+    {art:'🌌', text:'On the fourth day, God put lights in the sky.'},
+    {art:'☀️🌙⭐', text:'The sun to shine in the day, and the moon and stars to shine at night.'},
+    {art:'📅', text:'They help us know the days, the seasons and the years.'}],
+    game:{type:'quiz', questions:[
+      {q:'What did God put in the sky on Day 4?', o:['Birds','Sun, moon and stars','Clouds','Rainbows'], a:1, x:'On Day 4 God made the sun, moon and stars (Genesis 1:16).'},
+      {q:'What shines in the sky at night?', o:['The sun','The moon and stars','The sea','Trees'], a:1, x:'God made the moon and stars to give light at night (Genesis 1:16).'}]}},
+  { id:'c5', title:'Fish, Birds and Animals', ref:'Genesis 1:20–25', story:[
+    {art:'🐟🐠🐋', text:'On the fifth day, God filled the seas with fish and other sea creatures.'},
+    {art:'🐦🦅🦜', text:'God filled the sky with birds of every kind.'},
+    {art:'🐘🐑🐞', text:'On the sixth day, God made animals for the land: big ones, small ones and creepy-crawly ones!'}],
+    game:{type:'quiz', questions:[
+      {q:'What did God create on Day 5?', o:['Fish and birds','People','The sun','Plants'], a:0, x:'On Day 5 God made sea creatures and birds (Genesis 1:20–21).'},
+      {q:'When did God make animals for the land?', o:['Day 2','Day 3','Day 6','Day 7'], a:2, x:'God made the land animals on Day 6 (Genesis 1:24–25).'}]}},
+  { id:'c6', title:'People and God’s Rest', ref:'Genesis 1:26–2:3', story:[
+    {art:'👫', text:'Also on the sixth day, God made people, man and woman, in his own image.'},
+    {art:'🌍💚', text:'God looked at everything he had made, and it was very good.'},
+    {art:'😌🌿', text:'On the seventh day, God rested from all his work and made that day holy.'}],
+    game:{type:'verse', ref:'Genesis 1:31 (KJV)', text:'And God saw every thing that he had made, and, behold, it was very good.', blank:14, options:['good','big','new','quiet'], build:[10,15]}},
+  { id:'c7', title:'Creation Challenge', challenge:true, ref:'Genesis 1–2', story:[
+    {art:'🏆🌍', text:'Time to show what you know about Creation! Answer all three questions.'}],
+    game:{type:'quiz', questions:[
+      {q:'What did God create first?', o:['Animals','People','Light','Plants'], a:2, x:'Light came first, on Day 1 (Genesis 1:3).'},
+      {q:'On which day did God rest?', o:['Day 1','Day 3','Day 6','Day 7'], a:3, x:'God rested on the seventh day (Genesis 2:2).'},
+      {q:'What did God say about everything he made?', o:['It was very good','It was too big','It was okay','It needed fixing'], a:0, x:'God saw everything he had made, and it was very good (Genesis 1:31).'}]}}
+ ]},
+ { id:'noah', title:'Noah', emoji:'🚢', color:'#3E8EDE', ref:'Genesis 6–9', levels:[
+  { id:'n1', title:'Noah’s Story', ref:'Genesis 6:5–14', story:[
+    {art:'😔🌍', text:'Many years later, people on earth were doing lots of wrong things, and it made God sad.'},
+    {art:'🙏👴', text:'But Noah walked with God and did what was right.'},
+    {art:'🪵🔨', text:'God told Noah to build a very big boat called an ark.'}],
+    game:{type:'quiz', questions:[
+      {q:'Why did God choose Noah?', o:['He was the strongest','He walked with God and did right','He was a king','He had the biggest house'], a:1, x:'The Bible says Noah was a just man who walked with God (Genesis 6:9).'}]}},
+  { id:'n2', title:'Building the Ark', ref:'Genesis 6:14–22', story:[
+    {art:'📏📐', text:'God gave Noah exact instructions: how long, how wide and how tall to make the ark.'},
+    {art:'🪵🛶', text:'Noah built it from gopher wood and covered it with pitch to keep the water out.'},
+    {art:'✅🚢', text:'Noah did everything just as God commanded him.'}],
+    game:{type:'verse', ref:'Genesis 6:22 (KJV)', text:'Thus did Noah; according to all that God commanded him, so did he.', blank:2, options:['Noah','Moses','David','Adam'], build:[3,10]}},
+  { id:'n3', title:'Gathering the Animals', ref:'Genesis 6:19–7:9', story:[
+    {art:'🦒🐘🦁', text:'God told Noah to bring animals onto the ark, male and female of every kind.'},
+    {art:'🐑🐑🐦🐦', text:'The animals came to Noah two by two.'},
+    {art:'👨‍👩‍👦‍👦', text:'Noah’s family went in too: his wife, his three sons and their wives.'}],
+    game:{type:'match', title:'Help Noah find the animal pairs', pairs:['🐘','🦁','🐑','🦒']}},
+  { id:'n4', title:'The Flood', ref:'Genesis 7:11–8:12', story:[
+    {art:'🌧️🌧️🌧️', text:'Then the rain began. It rained for 40 days and 40 nights.'},
+    {art:'🌊🚢🌊', text:'The water covered even the mountains, but the ark floated safely.'},
+    {art:'🕊️🌿', text:'God remembered Noah. The waters went down, and Noah sent out a dove. It came back with an olive leaf!'}],
+    game:{type:'quiz', questions:[
+      {q:'How long did it rain?', o:['7 days','40 days and 40 nights','100 days','One year'], a:1, x:'It rained on the earth for 40 days and 40 nights (Genesis 7:12).'},
+      {q:'What did the dove bring back?', o:['A fish','A flower','An olive leaf','A stone'], a:2, x:'The dove came back with an olive leaf in its beak (Genesis 8:11).'}]}},
+  { id:'n5', title:'The Rainbow', ref:'Genesis 8:18–9:17', story:[
+    {art:'🙌🌄', text:'Noah and his family stepped out onto dry land and thanked God.'},
+    {art:'🤝', text:'God made a promise: never again would a flood destroy the whole earth.'},
+    {art:'🌈', text:'God put a rainbow in the clouds as the sign of his promise.'}],
+    game:{type:'verse', ref:'Genesis 9:13 (KJV)', note:'Here “bow” means rainbow, and a “covenant” is a promise.', text:'I do set my bow in the cloud, and it shall be for a token of a covenant between me and the earth.', blank:7, options:['cloud','sea','tree','hill'], build:[0,8]}},
+  { id:'n6', title:'Noah Challenge', challenge:true, ref:'Genesis 6–9', story:[
+    {art:'🏆🚢', text:'Time to show what you know about Noah! Answer all three questions.'}],
+    game:{type:'quiz', questions:[
+      {q:'What did God tell Noah to build?', o:['A tower','An ark','A temple','A wall'], a:1, x:'God told Noah to make an ark (Genesis 6:14).'},
+      {q:'How did the animals come onto the ark?', o:['Two by two','One at a time','They swam','In a big herd'], a:0, x:'The animals went into the ark two by two (Genesis 7:9).'},
+      {q:'What was the sign of God’s promise?', o:['A star','A dove','A rainbow','A mountain'], a:2, x:'God set his rainbow in the clouds as the sign (Genesis 9:13).'}]}}
+ ]},
+ { id:'david', title:'David & Goliath', emoji:'🪨', color:'#FF8A3D', ref:'1 Samuel 16–17', levels:[
+  { id:'d1', title:'Meet David', ref:'1 Samuel 16:1–13', story:[
+    {art:'🧔📜', text:'God sent the prophet Samuel to Bethlehem to choose a new king from Jesse’s sons.'},
+    {art:'💪💪💪', text:'Samuel saw tall, strong sons. But God said, “People look at the outside, but I look at the heart.”'},
+    {art:'🐑🧒', text:'The youngest son, David, was out looking after the sheep. God chose him!'}],
+    game:{type:'quiz', questions:[
+      {q:'Who did God choose to be the next king?', o:['Goliath','Samuel','David','Saul'], a:2, x:'God chose David, the youngest son of Jesse (1 Samuel 16:12–13).'},
+      {q:'What does God look at?', o:['How tall we are','Our clothes','The heart','How strong we are'], a:2, x:'The Lord looks on the heart (1 Samuel 16:7).'}]}},
+  { id:'d2', title:'David the Shepherd', ref:'1 Samuel 17:34–37', story:[
+    {art:'🐑🐑🐑', text:'David looked after his father’s sheep.'},
+    {art:'🦁🐻', text:'When a lion or a bear took a lamb, David went after it and rescued the lamb.'},
+    {art:'🙏', text:'David knew that God was the one who kept him safe.'}],
+    game:{type:'verse', ref:'Psalm 23:1 (KJV)', text:'The Lord is my shepherd; I shall not want.', blank:4, options:['shepherd','king','teacher','friend'], build:[0,9]}},
+  { id:'d3', title:'Goliath Arrives', ref:'1 Samuel 17:1–16', story:[
+    {art:'⚔️🏕️', text:'The Philistine army came to fight against Israel.'},
+    {art:'🗿', text:'Their champion was Goliath of Gath, a giant over nine feet tall!'},
+    {art:'📢😨', text:'For 40 days, Goliath shouted challenges every morning and evening. Everyone was afraid.'}],
+    game:{type:'quiz', questions:[
+      {q:'Where was Goliath from?', o:['Bethlehem','Gath','Egypt','Jerusalem'], a:1, x:'Goliath was a champion of the Philistines, from Gath (1 Samuel 17:4).'},
+      {q:'For how many days did Goliath challenge Israel?', o:['3 days','7 days','40 days','One year'], a:2, x:'Goliath came out morning and evening for 40 days (1 Samuel 17:16).'}]}},
+  { id:'d4', title:'David’s Faith', ref:'1 Samuel 17:17–40', story:[
+    {art:'🧺🍞', text:'Jesse sent David to bring food to his brothers in the army.'},
+    {art:'🗣️', text:'David heard Goliath and said, “I will go and fight him.”'},
+    {art:'🪨🪨🪨🪨🪨', text:'King Saul offered his armour, but David chose his sling and five smooth stones.'}],
+    game:{type:'verse', ref:'Psalm 56:3 (KJV)', note:'A psalm of David. “What time” means “whenever”.', text:'What time I am afraid, I will trust in thee.', blank:7, options:['trust','hide','run','sleep'], build:[0,10]}},
+  { id:'d5', title:'The Battle', ref:'1 Samuel 17:41–50', story:[
+    {art:'🗿😤', text:'Goliath made fun of David because he was young.'},
+    {art:'🧒💬', text:'David said, “The battle is the Lord’s!”'},
+    {art:'🪨💥', text:'David slung a stone. It hit Goliath on the forehead, and the giant fell!'}],
+    game:{type:'match', title:'Match the pictures from David’s story', pairs:['🪨','🐑','👑','🛡️']}},
+  { id:'d6', title:'David Challenge', challenge:true, ref:'1 Samuel 16–17', story:[
+    {art:'🏆🪨', text:'Time to show what you know about David! Answer all three questions.'}],
+    game:{type:'quiz', questions:[
+      {q:'What did David use to defeat Goliath?', o:['A sword','A sling and a stone','A bow and arrow','A spear'], a:1, x:'David used his sling and a stone (1 Samuel 17:49–50).'},
+      {q:'How many smooth stones did David choose?', o:['One','Three','Five','Ten'], a:2, x:'David chose five smooth stones from the brook (1 Samuel 17:40).'},
+      {q:'Who did David say the battle belonged to?', o:['King Saul','The army','Himself','The Lord'], a:3, x:'David said, “The battle is the Lord’s” (1 Samuel 17:47).'}]}}
+ ]}
+];
+const COMING = [{title:'Abraham',emoji:'⛺'},{title:'Joseph',emoji:'🧥'},{title:'Moses',emoji:'📜'},{title:'Daniel',emoji:'🦁'}];
+const DAILY = [
+ {q:'Who defeated Goliath?', o:['Saul','David','Samuel','Noah'], a:1, x:'Young David defeated Goliath with a sling and a stone (1 Samuel 17:50).'},
+ {q:'Who built the ark?', o:['Moses','Noah','David','Abraham'], a:1, x:'God told Noah to build the ark (Genesis 6:14).'},
+ {q:'What did God create on Day 1?', o:['Light','Fish','People','Stars'], a:0, x:'God said “Let there be light” (Genesis 1:3).'},
+ {q:'What was David’s job before he became king?', o:['Fisherman','Shepherd','Builder','Soldier'], a:1, x:'David looked after his father’s sheep (1 Samuel 16:11).'},
+ {q:'On which day did God rest?', o:['Day 1','Day 4','Day 6','Day 7'], a:3, x:'God rested on the seventh day (Genesis 2:2).'},
+ {q:'Which bird brought Noah an olive leaf?', o:['A dove','A raven','An eagle','A sparrow'], a:0, x:'The dove returned with an olive leaf (Genesis 8:11).'},
+ {q:'Which prophet anointed David?', o:['Elijah','Jonah','Samuel','Moses'], a:2, x:'Samuel anointed David in Bethlehem (1 Samuel 16:13).'}
+];
+const CHARS = [
+ {id:'explorer',name:'Explorer',e:'🧒',cost:0},{id:'adventurer',name:'Adventurer',e:'👧',cost:0},
+ {id:'shepherd',name:'Shepherd',e:'🧑‍🌾',cost:500},{id:'scholar',name:'Scholar',e:'🧑‍🎓',cost:750},
+ {id:'royal',name:'Royal',e:'🤴',cost:1000},{id:'warrior',name:'Warrior',e:'🛡️',cost:1500}];
+const ACCS = [
+ {id:'cap',name:'Cap',e:'🧢',cost:150},{id:'bag',name:'Travel bag',e:'🎒',cost:200},{id:'scarf',name:'Scarf',e:'🧣',cost:250},
+ {id:'star',name:'Gold star',e:'⭐',cost:300},{id:'scroll',name:'Scroll',e:'📜',cost:400},{id:'sandal',name:'Sandals',e:'🩴',cost:350}];
+const BADGES = [
+ {id:'first',e:'👣',name:'First Steps',desc:'Complete your first level',p:s=>[lvCount(s),1]},
+ {id:'explorer',e:'🏆',name:'Bible Explorer',desc:'Complete 5 levels',p:s=>[lvCount(s),5]},
+ {id:'scripture',e:'📖',name:'Scripture Learner',desc:'Learn 5 memory verses',p:s=>[Object.keys(s.verses).length,5]},
+ {id:'faithful',e:'🏅',name:'Faithful Learner',desc:'Complete a whole Bible world',p:s=>[worldsDone(s),1]},
+ {id:'champion',e:'⭐',name:'Bible Champion',desc:'Answer 25 questions correctly',p:s=>[s.correctTotal,25]},
+ {id:'bright',e:'☀️',name:'Bright Start',desc:'Complete 3 daily challenges',p:s=>[s.dailyCount,3]},
+ {id:'collector',e:'🪙',name:'Coin Collector',desc:'Earn 5,000 coins',p:s=>[s.earned,5000]}];
+const FAMILY = [{n:'Sarah',e:'👩',s:1450},{n:'Daniel',e:'🧒',s:1100},{n:'Grace',e:'👧',s:780},{n:'Samuel',e:'👦',s:420}];
+
+/* ---------------- State ---------------- */
+const KEY = 'bible-quest-proto-v1';
+function fresh(){return {onboarded:false,parentEmail:'',child:{name:'',age:'7–8',char:'explorer',acc:null,translation:'KJV'},
+  coins:0,earned:0,completed:{},verses:{},owned:{chars:['explorer','adventurer'],accs:[]},badges:[],
+  correctTotal:0,answeredTotal:0,dailyCount:0,daily:{date:'',wrong:[],done:false,got:0},
+  week:{key:'',points:0,levels:0,answered:0,correct:0},
+  settings:{leaderboard:true,notifyChallenge:true,notifyLesson:true,sound:true},demoUnlock:false}}
+let S;
+try{ S = JSON.parse(localStorage.getItem(KEY)) || fresh(); }catch(e){ S = fresh(); }
+S = Object.assign(fresh(), S);
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+const ui = {screen:S.onboarded?'main':'welcome', tab:'journey', world:0, run:null,
+  onb:{email:'',agree:false,code:'',name:'',age:'7–8',char:'explorer',translation:'KJV',err:''},
+  gate:null, scoresTab:'family', resetArm:false, scroll:{}};
+
+/* ---------------- Helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+const lvCount = s => Object.keys(s.completed).length;
+const worldsDone = s => WORLDS.filter(w => w.levels.every(l => s.completed[l.id])).length;
+const level = () => 1 + lvCount(S);
+const charOf = id => CHARS.find(c=>c.id===id) || CHARS[0];
+const accOf = id => ACCS.find(a=>a.id===id);
+const findLevel = id => { for(const [wi,w] of WORLDS.entries()){ const j=w.levels.findIndex(l=>l.id===id); if(j>-1) return {w,wi,lv:w.levels[j],j}; } };
+const worldUnlocked = i => i===0 || S.demoUnlock || WORLDS[i-1].levels.every(l=>S.completed[l.id]);
+const levelUnlocked = (wi,j) => worldUnlocked(wi) && (j===0 || S.demoUnlock || !!S.completed[WORLDS[wi].levels[j-1].id]);
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function weekKey(){ const d=new Date(); const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); const day=t.getUTCDay()||7;
+  t.setUTCDate(t.getUTCDate()+4-day); const y=new Date(Date.UTC(t.getUTCFullYear(),0,1)); return t.getUTCFullYear()+'-W'+Math.ceil(((t-y)/864e5+1)/7); }
+function ensureWeek(){ const k=weekKey(); if(S.week.key!==k) S.week={key:k,points:0,levels:0,answered:0,correct:0}; }
+function ensureDaily(){ const k=todayKey(); if(S.daily.date!==k) S.daily={date:k,wrong:[],done:false,got:0}; }
+function dailyQ(){ const d=new Date(); const n=Math.floor((d - new Date(d.getFullYear(),0,0))/864e5); return DAILY[n % DAILY.length]; }
+function credit(n){ S.coins+=n; S.earned+=n; ensureWeek(); S.week.points+=n; }
+function avatar(cid, aid, size){ const c=charOf(cid), a=accOf(aid);
+  return `<span class="av av-${size}" aria-hidden="true">${c.e}${a?`<span class="av-a">${a.e}</span>`:''}</span>`; }
+const starStr = n => '★'.repeat(n)+'☆'.repeat(3-n);
+
+let toastQ=[], toastBusy=false;
+function toast(msg){ toastQ.push(msg); if(!toastBusy) nextToast(); }
+function nextToast(){ const m=toastQ.shift(); if(!m){toastBusy=false;return;} toastBusy=true;
+  const t=document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=m; $('#phone').appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>{t.remove(); nextToast();},320);},2300); }
+function floatText(txt){ const f=document.createElement('div'); f.className='float'; f.textContent=txt; $('#phone').appendChild(f); setTimeout(()=>f.remove(),950); }
+function checkBadges(){ const got=[]; let changed=true;
+  while(changed){ changed=false; for(const b of BADGES){ if(S.badges.includes(b.id)) continue; const [v,t]=b.p(S);
+    if(v>=t){ S.badges.push(b.id); credit(250); got.push(b); changed=true; } } }
+  got.forEach(b=>toast(`${b.e} New badge: ${b.name}! +250 coins`)); return got; }
+
+/* ---------------- Screens ---------------- */
+function render(){
+  const ph=$('#phone'); const sc=ph.querySelector('.scroll'); const key=ui.screen+':'+ui.tab+':'+ui.world;
+  if(sc) ui.scroll[ph.dataset.key]=sc.scrollTop;
+  const toasts=[...ph.querySelectorAll('.toast,.float')];
+  let html='';
+  switch(ui.screen){
+    case 'welcome': html=vWelcome(); break;
+    case 'onb-parent': html=vOnbParent(); break;
+    case 'onb-verify': html=vOnbVerify(); break;
+    case 'onb-child': html=vOnbChild(); break;
+    case 'onb-char': html=vOnbChar(); break;
+    case 'main': html=vMain(); break;
+    case 'world': html=vWorld(); break;
+    case 'run': html=vRun(); break;
+    case 'gate': html=vGate(); break;
+    case 'parent': html=vParent(); break;
+  }
+  ph.innerHTML=html; toasts.forEach(t=>ph.appendChild(t)); ph.dataset.key=key;
+  const nsc=ph.querySelector('.scroll'); if(nsc && ui.scroll[key]!=null && !ui.resetScroll) nsc.scrollTop=ui.scroll[key];
+  ui.resetScroll=false;
+  if(ui.run && ui.run.justFinished){ ui.run.justFinished=false; confetti(); }
+  const auto=ph.querySelector('[data-autofocus]'); if(auto) auto.focus();
+}
+function go(screen, extra){ ui.screen=screen; Object.assign(ui, extra||{}); ui.resetScroll=true; render(); }
+
+function onbHead(step){ return `<div class="onb-head">${step>1?`<button class="btn ghost small" data-a="onb-back" aria-label="Back">←</button>`:''}
+  <div class="stepdots" aria-label="Step ${step} of 4">${[1,2,3,4].map(i=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div></div>`; }
+
+function vWelcome(){ return `<div class="welcome">
+  <div><div class="rainbow" aria-hidden="true"></div>
+  <h1 class="title-big">Bible Quest</h1>
+  <p class="tagline">Bible stories, games and memory verses for ages 7–10.</p>
+  <div class="hills" aria-hidden="true">🌍🚢🪨</div></div>
+  <div><button class="btn sun wide" data-a="start-setup">Set up for my child</button>
+  <p class="note">A grown-up creates the account. Children never need an email address, and there’s no chat or messaging anywhere in the app.</p></div></div>`; }
+
+function vOnbParent(){ const o=ui.onb; return `<div class="onb">${onbHead(1)}<div class="scroll pad">
+  <h1>Create your parent account</h1><p class="lead">You’ll manage your child’s profile, privacy and progress from here.</p>
+  <label class="field"><span>Your email</span><input class="input" id="email" type="email" autocomplete="email" value="${esc(o.email)}" placeholder="you@example.com" data-autofocus></label>
+  <label class="check"><input type="checkbox" id="agree" ${o.agree?'checked':''}> I’m the parent or legal guardian, and I agree to the terms and privacy notice.</label>
+  ${o.err?`<p class="err" role="alert">${o.err}</p>`:''}
+  <p class="note" style="text-align:left;margin-left:0">Prototype: nothing is sent or stored on a server.</p>
+  </div><div class="onb-foot"><button class="btn wide" data-a="onb-parent-next">Continue</button></div></div>`; }
+
+function vOnbVerify(){ const o=ui.onb; return `<div class="onb">${onbHead(2)}<div class="scroll pad">
+  <h1>Check your email</h1><p class="lead">We sent a 4-digit code to ${esc(o.email)}. Enter it to confirm you’re a grown-up.</p>
+  <label class="field"><span>Code</span><input class="input" id="code" inputmode="numeric" maxlength="4" value="${esc(o.code)}" placeholder="1234" data-autofocus>
+  <small>Prototype: use 1234.</small></label>
+  ${o.err?`<p class="err" role="alert">${o.err}</p>`:''}
+  </div><div class="onb-foot"><button class="btn wide" data-a="onb-verify-next">Verify</button></div></div>`; }
+
+function vOnbChild(){ const o=ui.onb; return `<div class="onb">${onbHead(3)}<div class="scroll pad">
+  <h1>Add your child</h1><p class="lead">Only you will see these settings.</p>
+  <label class="field"><span>Nickname</span><input class="input" id="nick" maxlength="12" value="${esc(o.name)}" placeholder="e.g. Star Explorer" data-autofocus>
+  <small>Use a nickname, not a real name. It’s what appears on leaderboards.</small></label>
+  <div class="field"><span>Age group</span><div class="chips" role="radiogroup">
+   ${['7–8','9–10'].map(a=>`<button class="chip ${o.age===a?'on':''}" role="radio" aria-checked="${o.age===a}" data-a="age" data-v="${a}">Ages ${a}</button>`).join('')}
+  </div></div>
+  <label class="field"><span>Bible translation for memory verses</span>
+   <select class="input" id="trans"><option value="KJV">King James Version (KJV)</option><option disabled>NIrV (coming soon)</option><option disabled>ICB (coming soon)</option></select></label>
+  ${o.err?`<p class="err" role="alert">${o.err}</p>`:''}
+  </div><div class="onb-foot"><button class="btn wide" data-a="onb-child-next">Continue</button></div></div>`; }
+
+function vOnbChar(){ const o=ui.onb; return `<div class="onb">${onbHead(4)}<div class="scroll pad">
+  <h1>Hand the phone to ${esc(o.name)}!</h1><p class="lead">Pick your character. You can unlock more with coins you earn.</p>
+  <div class="starters">${CHARS.filter(c=>c.cost===0).map(c=>`<button class="starter ${o.char===c.id?'on':''}" data-a="pick-starter" data-v="${c.id}" aria-pressed="${o.char===c.id}">
+   <span class="e">${c.e}</span><b>${c.name}</b></button>`).join('')}</div>
+  </div><div class="onb-foot"><button class="btn sun wide" data-a="onb-finish">Start my quest</button></div></div>`; }
+
+function hud(){ return `<header class="hud">
+  <button class="avatar-btn" data-a="tab" data-v="shop" aria-label="Change character">${avatar(S.child.char,S.child.acc,'sm')}</button>
+  <div class="who"><div class="nm">${esc(S.child.name)}</div><div class="lv">Level ${level()}</div></div>
+  <div class="coins" aria-label="${S.coins} coins"><span class="coin" aria-hidden="true">🪙</span>${fmt(S.coins)}</div>
+  <button class="grown" data-a="gate-open">Grown-ups</button></header>`; }
+function tabs(){ const t=[['journey','🗺️','Journey'],['daily','☀️','Daily'],['shop','🛍️','Shop'],['badges','🏅','Badges'],['scores','🏆','Scores']];
+  return `<nav class="tabs">${t.map(([id,ic,l])=>`<button class="tab ${ui.tab===id?'on':''}" data-a="tab" data-v="${id}" ${ui.tab===id?'aria-current="page"':''}><span class="ic" aria-hidden="true">${ic}</span>${l}</button>`).join('')}</nav>`; }
+
+function vMain(){ let body='';
+  if(ui.tab==='journey') body=vJourney(); else if(ui.tab==='daily') body=vDaily(); else if(ui.tab==='shop') body=vShop();
+  else if(ui.tab==='badges') body=vBadges(); else body=vScores();
+  return hud()+`<main class="scroll">${body}</main>`+tabs(); }
+
+function vJourney(){
+  const all=[...WORLDS.map((w,i)=>({w,i})), ...COMING.map(c=>({soon:c}))];
+  const rowH=176, top=26, H=top+all.length*rowH+20;
+  const pts=all.map((_,i)=>({x:i%2?70:30, y:top+i*rowH+48}));
+  let d=`M ${pts[0].x} ${pts[0].y}`; for(let i=1;i<pts.length;i++){ const a=pts[i-1], b=pts[i]; d+=` C ${a.x} ${a.y+rowH/2}, ${b.x} ${b.y-rowH/2}, ${b.x} ${b.y}`; }
+  const current=WORLDS.findIndex((w,i)=>worldUnlocked(i) && !w.levels.every(l=>S.completed[l.id]));
+  const nodes=all.map((n,i)=>{ const p=pts[i]; const pos=`left:${p.x}%;top:${p.y-48}px`;
+    if(n.soon) return `<div class="world soon" style="${pos}"><span class="orb" aria-hidden="true">${n.soon.emoji}</span><span class="wt">${n.soon.title}</span><span class="wp">Coming soon</span></div>`;
+    const {w}=n, un=worldUnlocked(n.i), done=w.levels.filter(l=>S.completed[l.id]).length;
+    return `<button class="world ${un?'':'locked'} ${n.i===current?'current':''}" style="${pos};--wc:${w.color}" data-a="${un?'open-world':'locked-world'}" data-v="${n.i}">
+     <span class="orb" aria-hidden="true">${un?w.emoji:'🔒'}</span><span class="wt">${w.title}</span><span class="wp">${done===w.levels.length?'⭐ Complete':`${done} / ${w.levels.length} levels`}</span></button>`; }).join('');
+  return `<div class="greet"><h1>Hi ${esc(S.child.name)}!</h1><p>Where shall we go today?</p></div>
+  <div class="map" style="height:${H}px"><svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" style="height:${H}px" aria-hidden="true"><path d="${d}" vector-effect="non-scaling-stroke"/></svg>${nodes}</div>`; }
+
+function vWorld(){ const w=WORLDS[ui.world]; const done=w.levels.filter(l=>S.completed[l.id]).length;
+  const nextIdx=w.levels.findIndex((l,j)=>!S.completed[l.id] && levelUnlocked(ui.world,j));
+  const label=l=>l.challenge?'World challenge':({quiz:'Story + Bible quiz',match:'Story + matching game',verse:'Story + memory verse'})[l.game.type];
+  return hud()+`<main class="scroll" style="--wc:${w.color}"><div class="whead">
+   <button class="back" data-a="back-map">← Journey</button>
+   <div class="row"><span class="big" aria-hidden="true">${w.emoji}</span><div><h1>${w.title}</h1><p>${w.ref}</p></div></div>
+   <div class="bar" role="progressbar" aria-valuenow="${done}" aria-valuemax="${w.levels.length}"><i style="width:${done/w.levels.length*100}%"></i></div></div>
+  <div class="lvls">${w.levels.map((l,j)=>{ const un=levelUnlocked(ui.world,j), st=S.completed[l.id];
+    return `<button class="lvl ${un?'':'locked'} ${j===nextIdx?'next':''} ${l.challenge?'challenge':''}" data-a="${un?'play':'locked-level'}" data-v="${l.id}">
+     <span class="num">${un?(l.challenge?'🏆':j+1):'🔒'}</span><span class="lt"><b>${l.title}</b><small>${label(l)}</small></span>
+     <span class="st" aria-label="${st||0} stars">${st?starStr(st):(j===nextIdx?'Play':'')}</span></button>`; }).join('')}</div></main>`+tabs(); }
+
+/* ---- Level run ---- */
+function startLevel(id){ const f=findLevel(id); ui.run={id, step:'story', p:0, gameCoins:0, mistakes:0, g:null}; ui.world=f.wi; go('run'); }
+function initGame(){ const {lv}=findLevel(ui.run.id); const gm=lv.game;
+  if(gm.type==='quiz') ui.run.g={i:0,picked:null};
+  if(gm.type==='match') ui.run.g={cards:shuffle([...gm.pairs,...gm.pairs]).map(e=>({e,up:false,done:false})),open:[],lock:false};
+  if(gm.type==='verse'){ const toks=gm.text.split(' '); const seg=toks.slice(gm.build[0],gm.build[1]);
+    ui.run.g={round:1,ok:false,wrong:[],built:[],bank:shuffle(seg.map((t,i)=>({t,id:i,used:false}))),shake:null}; }
+}
+function vRun(){ const r=ui.run, {w,lv}=findLevel(r.id);
+  const stepIdx={story:0,game:1,result:2}[r.step];
+  const bar=`<div class="runbar"><button class="x" data-a="run-close" aria-label="Leave level">✕</button>
+   <div class="steps" aria-label="Step ${stepIdx+1} of 3">${[0,1,2].map(i=>`<i class="${i<=stepIdx?'on':''}"></i>`).join('')}</div>
+   <div class="runcoins">🪙 +${r.step==='result'?r.res.total:r.gameCoins}</div></div>`;
+  let body='', foot='';
+  if(r.step==='story'){ const p=lv.story[r.p], last=r.p===lv.story.length-1;
+    body=`<div class="art" aria-hidden="true">${p.art}</div><p class="stext">${p.text}</p>
+     <div class="dots">${lv.story.map((_,i)=>`<i class="${i===r.p?'on':''}"></i>`).join('')}</div><p class="ref">📖 ${lv.ref}</p>`;
+    foot=`${r.p>0?`<button class="btn ghost" data-a="story-back">Back</button>`:''}<button class="btn ${last?'sun':''}" data-a="story-next">${last?(lv.challenge?'Start challenge':'Play the game'):'Next'}</button>`; }
+  else if(r.step==='game'){ const gm=lv.game;
+    if(gm.type==='quiz'){ const g=r.g, q=gm.questions[g.i], answered=g.picked!==null, right=answered&&g.picked===q.a;
+      body=`<p class="kicker">Question ${g.i+1} of ${gm.questions.length}</p><h2 class="q">${q.q}</h2>
+       <div class="opts">${q.o.map((o,i)=>{ let c=''; if(answered){ if(i===q.a)c='right'; else if(i===g.picked)c='wrong'; else c='dim'; }
+         return `<button class="opt ${c}" data-a="quiz-pick" data-v="${i}" ${answered?'disabled':''}><span class="k">${'ABCD'[i]}</span>${o}</button>`; }).join('')}</div>
+       ${answered?`<div class="feedback" role="status" style="--fb:${right?'var(--grass)':'var(--plum)'}"><b>${right?'Yes! +50 coins':'Good try! Here’s the answer'}</b>${q.x}</div>`:''}`;
+      foot=answered?`<button class="btn" data-a="quiz-next">${g.i===gm.questions.length-1?'Finish':'Next question'}</button>`:''; }
+    if(gm.type==='match'){ const g=r.g, found=g.cards.filter(c=>c.done).length/2;
+      body=`<h2 class="q" style="font-size:24px;margin-bottom:6px">${gm.title}</h2><p class="kicker">Tap two cards to find a pair. Pairs found: ${found} of ${gm.pairs.length}</p>
+       <div class="cards">${g.cards.map((c,i)=>`<button class="card ${c.done?'done':c.up?'up':''}" data-a="card" data-v="${i}" aria-label="${c.up||c.done?'Card showing '+c.e:'Hidden card'}">
+        <span ${c.up||c.done?'':'class="back"'}>${c.up||c.done?c.e:'✦'}</span></button>`).join('')}</div>`; }
+    if(gm.type==='verse'){ const g=r.g, toks=gm.text.split(' ');
+      if(g.round===1){ const blankWord=gm.options[0];
+        const txt=toks.map((t,i)=>i===gm.blank?(g.ok?`<span class="placed">${t}</span>`:t.replace(blankWord,'<span class="blank">?</span>')):t).join(' ');
+        body=`<p class="kicker">Memory verse · Step 1 of 2</p><h2 class="q" style="font-size:24px">Fill in the missing word</h2>
+         <div class="verse">${txt}<span class="vref">${gm.ref}${gm.note?'<br>'+gm.note:''}</span></div>
+         <div class="opts" style="margin-top:18px">${shuffleFixed(gm.options, r.id).map(o=>{ const c=g.ok&&o===blankWord?'right':g.wrong.includes(o)?'wrong':'';
+          return `<button class="opt ${c}" data-a="verse-pick" data-v="${esc(o)}" ${g.ok||g.wrong.includes(o)?'disabled':''}>${o}</button>`; }).join('')}</div>
+         ${g.wrong.length&&!g.ok?`<div class="feedback" role="status" style="--fb:var(--plum)"><b>Not that one</b>Read the verse again and try another word.</div>`:''}`;
+        foot=g.ok?`<button class="btn plum" data-a="verse-round2">Next: build the verse</button>`:''; }
+      else { const [s,e]=gm.build;
+        const txt=toks.map((t,i)=>{ if(i<s||i>=e) return t; const k=i-s; return k<g.built.length?`<span class="placed">${g.built[k]}</span>`:`<span class="slot"></span>`; }).join(' ');
+        body=`<p class="kicker">Memory verse · Step 2 of 2</p><h2 class="q" style="font-size:24px">Tap the words in order</h2>
+         <div class="verse">${txt}<span class="vref">${gm.ref}</span></div>
+         <div class="bank">${g.bank.map(b=>`<button class="tile ${b.used?'used':''} ${g.shake===b.id?'shake':''}" data-a="tile" data-v="${b.id}" ${b.used?'tabindex="-1" aria-hidden="true"':''}>${b.t}</button>`).join('')}</div>`; }
+    } }
+  else { const res=r.res; const nxt=nextLevelId();
+    body=`<div class="result"><div class="stars" aria-label="${res.stars} of 3 stars">${[0,1,2].map(i=>`<span class="${i<res.stars?'on':''}">★</span>`).join('')}</div>
+     <h1>${lv.challenge?'Challenge complete!':'Level complete!'}</h1><p class="sub">${lv.title}${res.first?'':' · replay'}</p>
+     <div class="ledger">${res.story?`<div><span>Bible story</span><span>+${res.story}</span></div>`:''}
+      <div><span>${({quiz:'Correct answers',match:'Matching game',verse:'Memory verse'})[lv.game.type]}${res.first?'':' (replay: half coins)'}</span><span>+${res.game}</span></div>
+      <div><span>Total</span><span>🪙 +${res.total}</span></div></div>
+     ${res.unlocked?`<div class="unlock">🔓 New world unlocked: <b>${res.unlocked}</b></div>`:''}</div>`;
+    foot=`<button class="btn ghost" data-a="result-map">Map</button>${nxt?`<button class="btn sun" data-a="play" data-v="${nxt}">Next level</button>`:`<button class="btn sun" data-a="back-map">Back to journey</button>`}`; }
+  return bar+`<main class="scroll pad" style="--wc:${w.color}">${body}</main>`+(foot?`<div class="run-foot">${foot}</div>`:''); }
+function shuffleFixed(arr, seed){ let h=0; for(const ch of seed) h=(h*31+ch.charCodeAt(0))>>>0; const a=[...arr];
+  for(let i=a.length-1;i>0;i--){ h=(h*1103515245+12345)>>>0; const j=h%(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function nextLevelId(){ const f=findLevel(ui.run.id); const nj=f.j+1;
+  if(nj<f.w.levels.length && levelUnlocked(f.wi,nj)) return f.w.levels[nj].id;
+  if(nj>=f.w.levels.length && f.wi+1<WORLDS.length && worldUnlocked(f.wi+1)){ const nw=WORLDS[f.wi+1]; const k=nw.levels.findIndex(l=>!S.completed[l.id]); return nw.levels[k<0?0:k].id; }
+  return null; }
+function finishGame(){ const r=ui.run, f=findLevel(r.id), type=f.lv.game.type;
+  const m=r.mistakes; const stars = type==='match' ? (m<=3?3:m<=6?2:1) : (m===0?3:(type==='verse'&&m<=2)||m===1?2:1);
+  const first=!S.completed[r.id]; const nextWasLocked = f.wi+1<WORLDS.length && !worldUnlocked(f.wi+1);
+  const story=first?100:0, game=Math.round(r.gameCoins*(first?1:.5)), total=story+game;
+  credit(total); S.completed[r.id]=Math.max(S.completed[r.id]||0, stars); ensureWeek(); S.week.levels++;
+  const unlocked = nextWasLocked && worldUnlocked(f.wi+1) ? WORLDS[f.wi+1].title : null;
+  r.res={stars,story,game,total,first,unlocked}; r.step='result'; r.justFinished=true;
+  save(); render(); checkBadges(); save(); render(); }
+function confetti(){ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c=document.createElement('div'); c.className='confetti'; const cols=['#FFC83D','#34B862','#3E8EDE','#FF6B5B','#7B5CD6','#FF9F43'];
+  for(let i=0;i<46;i++){ const p=document.createElement('i'); p.style.left=Math.random()*100+'%'; p.style.background=cols[i%cols.length];
+    p.style.animationDelay=(Math.random()*.6)+'s'; p.style.animationDuration=(1.6+Math.random()*1.2)+'s'; c.appendChild(p); }
+  $('#phone').appendChild(c); setTimeout(()=>c.remove(),3400); }
+
+/* ---- Tabs ---- */
+function vDaily(){ ensureDaily(); const q=dailyQ(), d=S.daily;
+  const head=`<div class="daily-sun" aria-hidden="true">☀️</div><h1 class="sec-title" style="text-align:center">Today’s challenge</h1>
+   <p class="sec-sub" style="text-align:center">One question a day. No streaks to keep: play whenever you like.</p>`;
+  if(d.done) return `<div class="pad">${head}<div class="panel" style="text-align:center"><h2>${d.got?`🎉 +${d.got} coins`:'Done for today'}</h2>
+   <p style="margin:0 0 6px">${q.q}</p><p style="color:var(--grass-deep);margin:0;font-size:20px" class="display">${q.o[q.a]}</p>
+   <p style="color:var(--ink-soft);font-weight:600;line-height:1.5">${q.x}</p></div>
+   <p class="note" style="text-align:center">A new question will be here tomorrow.</p></div>`;
+  return `<div class="pad">${head}<div class="panel"><h2 class="q" style="font-size:24px">${q.q}</h2>
+   <div class="opts">${q.o.map((o,i)=>`<button class="opt ${d.wrong.includes(i)?'wrong':''}" data-a="daily-pick" data-v="${i}" ${d.wrong.includes(i)?'disabled':''}><span class="k">${'ABCD'[i]}</span>${o}</button>`).join('')}</div>
+   ${d.wrong.length?`<div class="feedback" role="status" style="--fb:var(--plum)"><b>Not quite</b>Have another go. Getting it right now still earns 100 coins.</div>`:`<p class="note" style="margin-left:0">Right first time: 🪙 200</p>`}</div></div>`; }
+
+function vShop(){ const c=charOf(S.child.char);
+  const card=(it,kind)=>{ const owned=kind==='char'?S.owned.chars.includes(it.id):S.owned.accs.includes(it.id);
+    const wearing=kind==='char'?S.child.char===it.id:S.child.acc===it.id; const need=it.cost-S.coins;
+    let btn; if(wearing) btn=kind==='acc'?`<button class="btn ghost small" data-a="wear-acc" data-v="${it.id}">Take off</button>`:`<span class="earned-tag">Wearing</span>`;
+    else if(owned) btn=`<button class="btn small plum" data-a="wear-${kind}" data-v="${it.id}">Wear</button>`;
+    else btn=`<button class="btn small sun" data-a="buy-${kind}" data-v="${it.id}" ${need>0?'disabled':''}>🪙 ${fmt(it.cost)}</button>${need>0?`<span class="price">${fmt(need)} more to go</span>`:''}`;
+    return `<div class="item ${wearing?'wearing':''}"><span class="e" aria-hidden="true">${it.e}</span><b>${it.name}</b>${btn}</div>`; };
+  return `<div class="pad"><div class="me-card">${avatar(S.child.char,S.child.acc,'lg')}<div><h1 class="sec-title">${esc(S.child.name)}</h1>
+   <p class="sec-sub" style="margin:0">${c.name}${S.child.acc?' with '+accOf(S.child.acc).name.toLowerCase():''}</p></div></div>
+   <h2 class="sec-title" style="font-size:22px">Characters</h2><p class="sec-sub">Everything here is earned with coins. No real money, ever.</p>
+   <div class="grid2">${CHARS.map(x=>card(x,'char')).join('')}</div>
+   <h2 class="sec-title" style="font-size:22px;margin-top:24px">Accessories</h2><p class="sec-sub">Add one extra to your character.</p>
+   <div class="grid2">${ACCS.map(x=>card(x,'acc')).join('')}</div></div>`; }
+
+function vBadges(){ return `<div class="pad"><h1 class="sec-title">Badges</h1><p class="sec-sub">${S.badges.length} of ${BADGES.length} earned. Each badge gives you 250 coins.</p>
+  ${BADGES.map(b=>{ const has=S.badges.includes(b.id), [v,t]=b.p(S);
+   return `<div class="badge ${has?'':'locked'}"><span class="e" aria-hidden="true">${b.e}</span><div style="flex:1"><b>${b.name}</b><small>${b.desc}</small>
+    ${has?'':`<div class="minibar" aria-label="${Math.min(v,t)} of ${t}"><i style="width:${Math.min(100,v/t*100)}%"></i></div>`}</div>${has?'✅':`<small>${fmt(Math.min(v,t))}/${fmt(t)}</small>`}</div>`; }).join('')}</div>`; }
+
+function vScores(){ ensureWeek();
+  if(!S.settings.leaderboard) return `<div class="pad"><h1 class="sec-title">Weekly scores</h1><div class="empty"><span class="e">🏆</span>Leaderboards are turned off. A grown-up can turn them on in Grown-ups settings.</div></div>`;
+  const seg=`<div class="segment" role="tablist">${[['family','My family'],['church','Sunday school']].map(([id,l])=>`<button role="tab" aria-selected="${ui.scoresTab===id}" class="${ui.scoresTab===id?'on':''}" data-a="scores-tab" data-v="${id}">${l}</button>`).join('')}</div>`;
+  if(ui.scoresTab==='church') return `<div class="pad"><h1 class="sec-title">Weekly scores</h1><p class="sec-sub">Compete with groups your grown-up approves.</p>${seg}
+   <div class="empty"><span class="e">⛪</span>Sunday school groups are coming soon. Your grown-up or teacher will be able to set one up for your class.</div></div>`;
+  const rows=[...FAMILY.map(f=>({...f})),{n:S.child.name,e:charOf(S.child.char).e,s:S.week.points,me:true}].sort((a,b)=>b.s-a.s);
+  const medal=i=>['🥇','🥈','🥉'][i]||i+1;
+  return `<div class="pad"><h1 class="sec-title">Weekly scores</h1><p class="sec-sub">Earn points by playing levels, verses and challenges. Scores reset every Monday.</p>${seg}
+   <div class="board">${rows.map((r,i)=>`<div class="brow ${r.me?'me':''}"><span class="pos">${medal(i)}</span><span aria-hidden="true" style="font-size:24px">${r.e}</span>
+    <span class="bn">${esc(r.n)}${r.me?' (you)':''}</span><span class="bs">${fmt(r.s)}</span></div>`).join('')}</div>
+   <p class="note">Players only see nicknames and scores. There’s no chat or messaging.</p></div>`; }
+
+/* ---- Parent ---- */
+function vGate(){ const g=ui.gate; return `<div class="gate"><div style="font-size:54px" aria-hidden="true">🔒</div><h1>Grown-ups only</h1>
+  <p class="sec-sub">Answer this to continue.</p><div class="sum">${g.a} + ${g.b} = ?</div>
+  <input class="input" id="gateAns" inputmode="numeric" style="text-align:center;font-size:24px" aria-label="Answer" data-autofocus>
+  ${g.err?`<p class="err" role="alert">That’s not right. Try again.</p>`:''}
+  <div style="display:flex;gap:10px;margin-top:18px"><button class="btn ghost" style="flex:1" data-a="gate-cancel">Back</button><button class="btn plum" style="flex:1" data-a="gate-check">Continue</button></div></div>`; }
+function vParent(){ ensureWeek(); const c=charOf(S.child.char);
+  const cur=WORLDS.findIndex((w,i)=>worldUnlocked(i)&&!w.levels.every(l=>S.completed[l.id])); const cw=WORLDS[cur<0?WORLDS.length-1:cur];
+  const cdone=cw.levels.filter(l=>S.completed[l.id]).length, pct=Math.round(cdone/cw.levels.length*100);
+  const acc=S.week.answered?Math.round(S.week.correct/S.week.answered*100):0;
+  const verseList=Object.keys(S.verses).map(id=>findLevel(id).lv.game.ref);
+  const sw=(k,t,s)=>`<div class="setrow"><div>${t}<small>${s}</small></div><button class="switch" role="switch" aria-checked="${S.settings[k]}" aria-label="${t}" data-a="setting" data-v="${k}"></button></div>`;
+  return `<div class="phead"><h1>Parent dashboard</h1><button data-a="parent-close">Done</button></div><main class="scroll pad">
+  <div class="panel"><div class="me-card" style="margin:0">${avatar(S.child.char,S.child.acc,'lg')}<div><h2 style="margin:0">${esc(S.child.name)}</h2>
+   <p style="margin:4px 0 0;color:var(--ink-soft);font-weight:600">Ages ${S.child.age} · ${S.child.translation} · ${c.name}</p></div></div></div>
+  <div class="panel"><h2>Overview</h2><div class="stats">
+   <div class="stat"><b>${level()}</b><small>Level</small></div><div class="stat"><b>${fmt(S.coins)}</b><small>Coins</small></div>
+   <div class="stat"><b>${worldsDone(S)}</b><small>Worlds done</small></div><div class="stat"><b>${verseList.length}</b><small>Memory verses</small></div>
+   <div class="stat"><b>${S.badges.length}</b><small>Badges</small></div><div class="stat"><b>${lvCount(S)}</b><small>Lessons</small></div></div></div>
+  <div class="panel"><h2>This week</h2><div class="stats">
+   <div class="stat"><b>${S.week.levels}</b><small>Levels played</small></div><div class="stat"><b>${S.week.answered}</b><small>Questions</small></div>
+   <div class="stat"><b>${acc}%</b><small>Correct</small></div></div></div>
+  <div class="panel"><h2>Current lesson</h2><p style="margin:0;font-weight:700">${cw.emoji} ${cw.title} <span style="color:var(--ink-soft);font-weight:600">· ${cw.ref}</span></p>
+   <div class="prog" role="progressbar" aria-valuenow="${pct}" aria-valuemax="100"><i style="width:${pct}%"></i></div><p style="margin:8px 0 0;color:var(--ink-soft);font-weight:600">${pct}% complete</p></div>
+  <div class="panel"><h2>Memory verses learned</h2>${verseList.length?`<ul class="vlist">${verseList.map(v=>`<li>📖 ${v}</li>`).join('')}</ul>`:`<p style="margin:0;color:var(--ink-soft);font-weight:600">None yet. Verses appear here as ${esc(S.child.name)} completes them.</p>`}</div>
+  <div class="panel"><h2>Settings</h2>
+   ${sw('leaderboard','Weekly leaderboard','Show the family leaderboard (nickname and score only)')}
+   ${sw('notifyChallenge','New challenge notifications','“A new Bible challenge is ready.”')}
+   ${sw('notifyLesson','Progress notifications','Tell me when a lesson or verse is completed')}
+   ${sw('sound','Sound effects','Play sounds during games')}</div>
+  <div class="panel"><h2>Privacy and safety</h2><p style="margin:0;line-height:1.5;font-weight:600;color:var(--ink-soft)">No chat, messages, voice or public profiles. No ads or in-app purchases. Only you can change these settings. Account email: ${esc(S.parentEmail)}</p></div>
+  <div class="panel"><h2>Prototype tools</h2><p style="margin:0 0 12px;color:var(--ink-soft);font-weight:600">For reviewing the MVP. Not part of the product.</p>
+   <div class="tools"><button class="btn small sun" data-a="demo-coins">Add 1,000 coins</button>
+   <button class="btn small plum" data-a="demo-unlock" ${S.demoUnlock?'disabled':''}>${S.demoUnlock?'All levels unlocked':'Unlock all levels'}</button>
+   <button class="btn small coral" data-a="demo-reset">${ui.resetArm?'Tap again to reset':'Reset prototype'}</button></div></div>
+  </main>`; }
+
+/* ---------------- Actions ---------------- */
+const A = {
+  'start-setup':()=>go('onb-parent'),
+  'onb-back':()=>{ ui.onb.err=''; const order=['onb-parent','onb-verify','onb-child','onb-char']; go(order[Math.max(0,order.indexOf(ui.screen)-1)]); },
+  'onb-parent-next':()=>{ const o=ui.onb; o.email=$('#email').value.trim(); o.agree=$('#agree').checked;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)) o.err='Enter an email address like name@example.com.';
+    else if(!o.agree) o.err='Tick the box to confirm you’re the parent or guardian.'; else { o.err=''; return go('onb-verify'); } render(); },
+  'onb-verify-next':()=>{ const o=ui.onb; o.code=$('#code').value.trim(); if(o.code!=='1234'){ o.err='That code doesn’t match. In this prototype the code is 1234.'; return render(); } o.err=''; go('onb-child'); },
+  'age':v=>{ ui.onb.name=$('#nick').value; ui.onb.age=v; render(); },
+  'onb-child-next':()=>{ const o=ui.onb; o.name=$('#nick').value.trim(); o.translation=$('#trans').value;
+    if(!o.name){ o.err='Add a nickname to continue.'; return render(); } if(!/^[\p{L}\p{N} ]+$/u.test(o.name)){ o.err='Nicknames can use letters, numbers and spaces only.'; return render(); }
+    o.err=''; go('onb-char'); },
+  'pick-starter':v=>{ ui.onb.char=v; render(); },
+  'onb-finish':()=>{ const o=ui.onb; S.parentEmail=o.email; S.child={name:o.name,age:o.age,char:o.char,acc:null,translation:o.translation};
+    S.onboarded=true; ensureWeek(); save(); go('main',{tab:'journey'}); toast('Welcome to Bible Quest! Start with Creation.'); },
+  'tab':v=>{ go('main',{tab:v}); },
+  'open-world':v=>{ go('world',{world:+v}); },
+  'locked-world':v=>toast(`Finish ${WORLDS[v-1].title} to unlock ${WORLDS[v].title}.`),
+  'locked-level':()=>toast('Finish the level before this one to unlock it.'),
+  'back-map':()=>go('main',{tab:'journey'}),
+  'result-map':()=>go('world'),
+  'play':v=>startLevel(v),
+  'run-close':()=>{ ui.run=null; go('world'); },
+  'story-next':()=>{ const r=ui.run, lv=findLevel(r.id).lv; if(r.p<lv.story.length-1) r.p++; else { r.step='game'; initGame(); } ui.resetScroll=true; render(); },
+  'story-back':()=>{ ui.run.p--; render(); },
+  'quiz-pick':v=>{ const r=ui.run, g=r.g, q=findLevel(r.id).lv.game.questions[g.i]; if(g.picked!==null) return; g.picked=+v; ensureWeek();
+    S.week.answered++; S.answeredTotal++; if(+v===q.a){ r.gameCoins+=50; S.correctTotal++; S.week.correct++; floatText('+50 🪙'); } else r.mistakes++; save(); render(); },
+  'quiz-next':()=>{ const r=ui.run, n=findLevel(r.id).lv.game.questions.length; r.g.i++; r.g.picked=null; if(r.g.i>=n) finishGame(); else { ui.resetScroll=true; render(); } },
+  'card':v=>{ const g=ui.run.g, c=g.cards[v]; if(g.lock||c.up||c.done) return; c.up=true; g.open.push(+v);
+    if(g.open.length===2){ const [a,b]=g.open.map(i=>g.cards[i]);
+      if(a.e===b.e){ a.done=b.done=true; a.up=b.up=false; g.open=[];
+        if(g.cards.every(x=>x.done)){ ui.run.gameCoins+=75; floatText('+75 🪙'); render(); setTimeout(finishGame,700); return; } }
+      else { g.lock=true; ui.run.mistakes++; setTimeout(()=>{ a.up=b.up=false; g.open=[]; g.lock=false; render(); },850); } }
+    render(); },
+  'verse-pick':v=>{ const r=ui.run, gm=findLevel(r.id).lv.game; if(v===gm.options[0]){ r.g.ok=true; } else { r.g.wrong.push(v); r.mistakes++; } render(); },
+  'verse-round2':()=>{ ui.run.g.round=2; render(); },
+  'tile':v=>{ const r=ui.run, g=r.g, gm=findLevel(r.id).lv.game, toks=gm.text.split(' '); const b=g.bank.find(x=>x.id===+v); if(!b||b.used) return;
+    const expected=toks[gm.build[0]+g.built.length];
+    if(b.t===expected){ b.used=true; g.built.push(b.t); g.shake=null;
+      if(g.built.length===gm.build[1]-gm.build[0]){ r.gameCoins+=100; S.verses[r.id]=true; floatText('+100 🪙'); render(); setTimeout(finishGame,700); return; } }
+    else { r.mistakes++; g.shake=b.id; setTimeout(()=>{ if(g.shake===b.id){ g.shake=null; render(); } },420); }
+    render(); },
+  'daily-pick':v=>{ ensureDaily(); const q=dailyQ(), d=S.daily; ensureWeek(); S.week.answered++; S.answeredTotal++;
+    if(+v===q.a){ d.got=d.wrong.length?100:200; d.done=true; S.dailyCount++; S.correctTotal++; S.week.correct++; credit(d.got); floatText(`+${d.got} 🪙`); save(); render(); checkBadges(); }
+    else d.wrong.push(+v); save(); render(); },
+  'buy-char':v=>{ const it=CHARS.find(c=>c.id===v); if(S.coins<it.cost) return; S.coins-=it.cost; S.owned.chars.push(v); S.child.char=v; save(); render(); toast(`${it.e} You unlocked the ${it.name}!`); },
+  'wear-char':v=>{ S.child.char=v; save(); render(); },
+  'buy-acc':v=>{ const it=accOf(v); if(S.coins<it.cost) return; S.coins-=it.cost; S.owned.accs.push(v); S.child.acc=v; save(); render(); toast(`${it.e} You unlocked the ${it.name.toLowerCase()}!`); },
+  'wear-acc':v=>{ S.child.acc = S.child.acc===v?null:v; save(); render(); },
+  'scores-tab':v=>{ ui.scoresTab=v; render(); },
+  'gate-open':()=>{ ui.gateFrom={screen:ui.screen}; go('gate',{gate:{a:10+Math.floor(Math.random()*40),b:10+Math.floor(Math.random()*40),err:false}}); },
+  'gate-check':()=>{ const g=ui.gate; if(parseInt($('#gateAns').value,10)===g.a+g.b) go('parent',{resetArm:false}); else { g.err=true; render(); } },
+  'gate-cancel':()=>go(ui.gateFrom?.screen||'main'),
+  'parent-close':()=>go(ui.gateFrom?.screen==='world'?'world':'main'),
+  'setting':v=>{ S.settings[v]=!S.settings[v]; save(); render(); },
+  'demo-coins':()=>{ credit(1000); save(); render(); checkBadges(); save(); render(); toast('Added 1,000 coins'); },
+  'demo-unlock':()=>{ S.demoUnlock=true; save(); render(); toast('All worlds and levels unlocked'); },
+  'demo-reset':()=>{ if(!ui.resetArm){ ui.resetArm=true; render(); return; } S=fresh(); save();
+    ui.onb={email:'',agree:false,code:'',name:'',age:'7–8',char:'explorer',translation:'KJV',err:''}; ui.run=null; ui.resetArm=false; go('welcome'); }
+};
+document.addEventListener('click', e=>{ const el=e.target.closest('[data-a]'); if(!el || el.disabled) return; const fn=A[el.dataset.a]; if(fn){ e.preventDefault(); fn(el.dataset.v); } });
+document.addEventListener('keydown', e=>{ if(e.key!=='Enter') return; const id=e.target.id;
+  const map={email:'onb-parent-next',code:'onb-verify-next',nick:'onb-child-next',gateAns:'gate-check'}; if(map[id]){ e.preventDefault(); A[map[id]](); } });
+ensureWeek(); render();
+</script>
+</body>
+</html>
